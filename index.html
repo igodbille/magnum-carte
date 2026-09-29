@@ -1741,6 +1741,30 @@ modifsNonExportees = 0;
 majEtatSauvegarde();
 initSharedTracking();
 
+// ?equipe=Fab&date=2026-09-30 ouvre directement cette journée.
+(function ouvrirJourneeDemandee() {
+  const params = new URLSearchParams(location.search);
+  const equipe = params.get('equipe');
+  const date = params.get('date');
+  if (!equipe || !date) return;
+  const day = (S().calendar[equipe] || []).find(d => d.date === date && !d.historique);
+  if (!day) return;
+  activeTeams = new Set([equipe]);
+  soloMode = true;
+  buildTeamList();
+  syncModeBtns();
+  const sel = document.getElementById('calTeam');
+  if ([...sel.options].some(o => o.value === equipe)) sel.value = equipe;
+  selectedDay = { team: equipe, key: day.key, date: day.date };
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'Calendrier'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panelCalendrier').classList.add('active');
+  render();
+  renderCalendar();
+  const pts = (day.store_ids || []).map(id => STOP_BY_ID.get(id)).filter(s => s && s.lat && s.lon).map(s => [s.lat, s.lon]);
+  if (pts.length) map.fitBounds(pts, { padding: [50, 50], maxZoom: 9 });
+})();
+
 </script>
 </body>
 </html>
