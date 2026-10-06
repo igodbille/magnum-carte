@@ -617,7 +617,19 @@ if (DATA.andy_base) {
     .bindTooltip(`Départ Andy — ${DATA.andy_base.label}`, {permanent: true, direction: 'right', offset: [10, 0]});
 }
 
-function storeKey(s) { return s.magasin; }
+function storeKey(s) {
+  const twins = DATA.stops.filter(x => x.magasin === s.magasin);
+  if (twins.length < 2) return s.magasin;
+  return s.magasin + '|' + (s.cp || s.id);
+}
+function nomAffiche(s) {
+  const twins = DATA.stops.filter(x => x.magasin === s.magasin);
+  if (twins.length < 2) return s.magasin;
+  const adr = s.adresse || '';
+  const m = adr.match(/C C\s+(.+)$/i);
+  const lieu = (m ? m[1] : (s.cp || '')).replace(/\s+/g, ' ').trim();
+  return lieu ? (s.magasin + ' — ' + lieu) : s.magasin;
+}
 function normalizeDoneNames(items) {
   const incoming = new Set(Array.isArray(items) ? items : []);
   // L'Excel fait foi : un magasin non validé ne peut pas rester coché en local.
@@ -1102,13 +1114,14 @@ function popupHtml(s) {
       ? `<button type="button" class="btn-undo" data-toggle-done="${s.magasin.replace(/"/g,'&quot;')}" data-done="0">Marquer comme à faire</button>`
       : `<button type="button" class="btn-done" data-toggle-done="${s.magasin.replace(/"/g,'&quot;')}" data-done="1">Valider comme fait</button>
          <button type="button" class="btn-refus" data-toggle-refused="${s.magasin.replace(/"/g,'&quot;')}" data-refused="1">Indiquer un refus</button>`);
-  return `<div class="popup-title">${s.magasin}</div>
+  const dateLabel = (refused || s.statut === 'Refus') ? 'Date du refus' : ((done || s.statut === 'Fait') ? 'Date' : 'Date prévue');
+  return `<div class="popup-title">${nomAffiche(s)}</div>
     <div class="popup-row">${s.adresse || ''}</div>
     <div class="popup-row">${s.cp || ''} ${s.ville || ''}</div>
     ${s.optionnel ? '<div class="popup-opt">Magasin OPTIONNEL, ajouté car il est sur la route</div>' : ''}
     ${telHtml(s)}
     <div class="popup-row"><b>Intervenant</b> · ${i.team}</div>
-    <div class="popup-row"><b>${refused ? 'Date du refus' : 'Date prévue'}</b> · ${i.date ? dayLabel(i.date, i.jour) : (refused ? 'non renseignée' : 'à planifier')}</div>
+    <div class="popup-row"><b>${dateLabel}</b> · ${i.date ? dayLabel(i.date, i.jour) : (refused ? 'non renseignée' : 'à planifier')}</div>
     ${i.ordre ? '<div class="popup-row"><b>Ordre du jour</b> · ' + i.ordre + '</div>' : ''}
     ${i.nuit ? '<div class="popup-row"><b>Fin de journée</b> · ' + i.nuit + '</div>' : ''}
     <span class="badge" style="background:${colors[i.team] || '#666'}">${i.zone || i.team}</span>
